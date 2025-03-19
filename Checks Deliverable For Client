@@ -1,0 +1,78 @@
+import tkinter.filedialog
+import pandas as pd
+
+# ============SELECT FILES========================================
+Masterlist_file = tkinter.filedialog.askopenfilename(title="Select MASTERLIST file")
+Tool_file = tkinter.filedialog.askopenfilename(title="Select TOOL file")
+#=================================================================
+
+#============DERIVE TOOL SHEET NAME FROM MLIST LAST COLUMN =======================
+Mlist = pd.read_excel(Masterlist_file,sheet_name="Titles", header=1).dropna(axis=1,how="all")
+
+full_month_name = {
+    "Jan": "January", "Feb": "February", "Mar": "March",
+    "Apr": "April", "May": "May", "Jun": "June",
+    "Jul": "July", "Aug": "August", "Sep": "September",
+    "Oct": "October", "Nov": "November", "Dec": "December"}
+
+Latest_Month_Year = Mlist.columns[-1]
+tool_sheet_name = full_month_name.get(Latest_Month_Year[:3]) + " 20" + Latest_Month_Year[len(Latest_Month_Year)-2:]
+#==================================================================================
+
+#===========USE .iloc[1:] TO REMOVE THE FIRST ROW CONTAINING "COLUMNx" ENTRIES, NOW NOT INTERFERING WITH DROPNA REMOVING NAN COLS===========
+TOOL = pd.read_excel(Tool_file, sheet_name=tool_sheet_name, header=2).iloc[1:].dropna(axis=1,how="all")
+#===========================================================================================================================================
+
+countries = ['Australia', 'Brazil', 'Canada', 'France', 'Germany', 'Italy', 'Japan', 'Mexico', 'United Kingdom']
+Metrics = ['Awareness', 'Intent to Watch', 'Attribution']
+# edited for confidentiality
+CLIENT_REMOVALS = {'A', 'B'. 'C'. 'D'}
+
+Country_specific_removals = {"Germany": (CLIENT_REMOVALS - {'D'}), 'Brazil': CLIENT_REMOVALS, 'Canada': CLIENT_REMOVALS, 'Australia': CLIENT_REMOVALS,
+                             'France': CLIENT_REMOVALS, 'Italy': CLIENT_REMOVALS, 'Japan': CLIENT_REMOVALS, 'Mexico': CLIENT_REMOVALS, 'United Kingdom': CLIENT_REMOVALS}
+error_indicator = 0
+
+for C in countries:
+    if C == "United Kingdom": Country = "UK"
+    else: Country = C
+    # ===========CREATE MLIST FILTERS AND APPLY TO MLIST=======================
+    there_exists_month_with_Y_entry = Mlist.loc[:, "Jan-23":].eq("Y").any(axis=1)
+    This_Country = Mlist["Country Full"] == C
+
+    Masterlist_set = set(Mlist["Title"][there_exists_month_with_Y_entry & This_Country].astype(str).str.strip()) - Country_specific_removals.get(C,set())
+    #==========================================================================
+
+    #==============================================================================================================================================
+    Titles_by_country = TOOL.loc[TOOL["Country"] == Country,["Title", "Metric"]].astype(str).map(lambda x: x.strip())
+    Title_counts = Titles_by_country["Title"].value_counts()
+
+    Tool_set = set(Titles_by_country["Title"])
+    #==============================================================================================================================================
+
+    if Masterlist_set != Tool_set:
+        error_indicator += 1
+        print("")
+        print(Country + ":")
+        print("Number of titles seen in the Masterlist: " + str(len(Masterlist_set)))
+        print("Number of titles we see in the Tool: " + str(len(Tool_set)))
+        if len(Masterlist_set - Tool_set) > 0:
+            print("The following titles need to be ADDED to the TOOL:")
+            for element in Masterlist_set - Tool_set:
+                print(element)
+
+        if len(Tool_set - Masterlist_set) > 0:
+            print("The following titles need to be REMOVED from the TOOL:")
+            for element in Tool_set - Masterlist_set:
+                print(element)
+
+if error_indicator == 0:
+    print("========No errors detected!=========")
+
+
+
+
+
+
+
+
+
