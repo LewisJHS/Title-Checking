@@ -1,3 +1,6 @@
+# This tool uses sets to assess that the appropriate titles per country are included 
+# in a monthly excel deliverable as per a client masterlist
+
 import tkinter.filedialog
 import pandas as pd
 
