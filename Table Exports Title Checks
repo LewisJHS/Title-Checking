@@ -1,0 +1,92 @@
+import pandas as pd
+import glob
+import tkinter.filedialog
+import re
+
+def Select_file(title: str):
+    return tkinter.filedialog.askopenfilename(title=title)
+def Select_folder(title: str):
+    return tkinter.filedialog.askdirectory(title=title)
+def Country_Name_Extraction(file: str) -> str:
+    parts = file.split("Originals Awareness ")
+    end_string = parts[-1].split(" ")
+    return end_string[0]
+
+Masterlist_file = Select_file("Select Masterlist")
+Export_folder = Select_folder("Select the CURRENT month's Export Folder")
+#Prev_Month_Export_Folder = Select_folder("Select the previous month's Export Folder")
+
+# recursively through all subfolders: glob.glob(folder + "/**/*.xlsx",recursive = True)
+# double asterisk and recursive arg both necessary
+Export_files = glob.glob(Export_folder + "/*.xlsx")
+
+# Masterlist Dataframe
+Mlist = pd.read_excel(Masterlist_file,sheet_name="Titles", header=1).dropna(axis=1, how='all')
+
+Questions = {
+    "Attribution": "ATTRIBUTION. [INSERT_TITLE] On which TV channel or streaming service are viewers most likely to watch…?",
+    "Intent_to_watch": "INTENT_TO_WATCH. [INSERT_TITLE] How likely are you to watch...?",
+    "Series_Viewership": "SERIES_VIEWERSHIP. [INSERT_TITLE] How much, if any, have you watched of the following?",
+    "movies_one_off_viewership": "MOVIES_ONE_OFF_VIEWERSHIP. [INSERT_TITLE] Have you watched the following?"
+}
+
+Banners = [" by Current Month", " by Month on Month 1", " by Month on Month 2"]
+
+for file in Export_files:
+    Country = Country_Name_Extraction(file)
+
+    # SPECIFIC MASTERLIST FILTERS
+    there_exists_month_with_Y_entry = Mlist.loc[:, "Jan-23":].eq("Y").any(axis=1)
+    Curr_Month_Awareness = Mlist[Mlist.columns[-1]] == "Y"
+    Is_a_series = Mlist["Series / Movie / One-off?"] == "Series"
+    Is_a_Movie = Mlist["Series / Movie / One-off?"] != "Series"
+    Viewership_curr_month = Mlist["Ask viewership this month?"] == "Yes"
+    if Country == "INTL": This_Country = Mlist["Country"] != ""
+    else: This_Country = Mlist["Country"] == Country
+
+    # FILTERED MASTERLIST DATAFRAMES
+    Attribution_by_Month_on_Month = Mlist["Title"][there_exists_month_with_Y_entry & This_Country].astype(str).str.strip()
+    Attribution_by_Current_Month = Mlist["Title"][Curr_Month_Awareness & This_Country].astype(str).str.strip()
+    Series_Viewership_by_Current_Month = Mlist["Title"][Is_a_series & Viewership_curr_month & Curr_Month_Awareness & This_Country].astype(str).str.strip()
+    Movies_Viewership_by_Current_Month = Mlist["Title"][Is_a_Movie & Viewership_curr_month & Curr_Month_Awareness & This_Country].astype(str).str.strip()
+
+    # DICTIONARY TO ENABLE DYNAMIC REFERENCE TO TITLE LISTS.
+    Mlist_titlelist_dict = {
+        "Attribution_by_Month_on_Month": Attribution_by_Month_on_Month,
+        "Attribution_by_Current_Month": Attribution_by_Current_Month,
+        "Series_Viewership_by_Current_Month": Series_Viewership_by_Current_Month,
+        "MOVIES_ONE_OFF_VIEWERSHIP_by_Current_Month": Movies_Viewership_by_Current_Month
+    }
+
+    #EXPORT TOC DATAFRAME
+    EXPORT_TOC_DATAFRAME = pd.read_excel(file, sheet_name="TOC", header=1).dropna(axis=1, how="all")
+
+    for banner in Banners:
+        for question in Questions.keys():
+            if "viewership" not in question.lower(): question_edit = "Attribution"
+            else:
+                question_edit = question
+            if " on " in banner: banner_edit = banner[:len(banner)-2]
+            else:
+                banner_edit = banner
+
+            # REFERENCE INTENDED MLIST TITLE LIST
+            key = question_edit + banner_edit.replace(" ", "_")
+            Mlist_title_list = Mlist_titlelist_dict.get(key, "")
+
+            Export_TOC_Titles = EXPORT_TOC_DATAFRAME["Output"][(EXPORT_TOC_DATAFRAME["Output"].astype(str).str.contains(question.upper(), na=False)) & (EXPORT_TOC_DATAFRAME["Sheet"] == banner[4:])]
+
+            indicator = 0
+            missing_titles = []
+            for title in Mlist_title_list:
+                match_cases = [case for case in Export_TOC_Titles.values if re.search(r"\[.*" + re.escape(str(title)) + r".*\]",case)]
+                if len(match_cases) == 0:
+                    indicator += 1
+                    missing_titles.append(title)
+
+            if indicator != 0:
+                print(Country + ": " + question + " ||| " + banner)
+                print(missing_titles)
+                print(""
+                      ""
+                      "")
