@@ -1,3 +1,10 @@
+# Accesses a masterlist that can be filtered to give the titles expected to appear in a given country file's table of contents. 
+# The expected titles in a given country also vary by question and timeframe. This variation of expected titles even within a 
+# given country/file is handled by iterating through the possible questions and "banners" to concatenate them, forming different 
+# keys in a dictionary. The values of which correspond to the appropriately filtered masterlist titles.
+
+RegEx is also used to bypass certain typos and whitespace that may appear in the syntax of the table of contents.
+
 import pandas as pd
 import glob
 import tkinter.filedialog
