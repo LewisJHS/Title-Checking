@@ -44,7 +44,6 @@ for C in countries:
 
     #==============================================================================================================================================
     Titles_by_country = TOOL.loc[TOOL["Country"] == Country,["Title", "Metric"]].astype(str).map(lambda x: x.strip())
-    Title_counts = Titles_by_country["Title"].value_counts()
 
     Tool_set = set(Titles_by_country["Title"])
     #==============================================================================================================================================
