@@ -29,7 +29,7 @@ TOOL = pd.read_excel(Tool_file, sheet_name=tool_sheet_name, header=2).iloc[1:].d
 countries = ['Australia', 'Brazil', 'Canada', 'France', 'Germany', 'Italy', 'Japan', 'Mexico', 'United Kingdom']
 Metrics = ['Awareness', 'Intent to Watch', 'Attribution']
 # edited for confidentiality
-CLIENT_REMOVALS = {'A', 'B'. 'C'. 'D'}
+CLIENT_REMOVALS = {'A', 'B', 'C', 'D'}
 
 Country_specific_removals = {"Germany": (CLIENT_REMOVALS - {'D'}), 'Brazil': CLIENT_REMOVALS, 'Canada': CLIENT_REMOVALS, 'Australia': CLIENT_REMOVALS,
                              'France': CLIENT_REMOVALS, 'Italy': CLIENT_REMOVALS, 'Japan': CLIENT_REMOVALS, 'Mexico': CLIENT_REMOVALS, 'United Kingdom': CLIENT_REMOVALS}
